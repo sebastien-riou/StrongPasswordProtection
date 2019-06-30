@@ -43,14 +43,16 @@ def get_section_headers_from_elf(elf):
     return sections
 
 if __name__ == "__main__":
-    if len(sys.argv)<3:
-        print("ERROR: need at least 2 arguments")
+    if len(sys.argv)<2:
+        print("ERROR: need at least 1 argument")
         print("usage:")
-        print("\t%s <src elf path> <dst elf path> [secrets path] [SPP_APW_EVEN]"%os.path.basename(__file__))
+        print("\t%s <src elf path> [dst elf path] [secrets path] [SPP_APW_EVEN]"%os.path.basename(__file__))
         print("\t",sys.argv)
         exit(-1)
     elfpath = sys.argv[1]
-    outpath = sys.argv[2]
+    outpath = elfpath+".protected"
+    if len(sys.argv) > 2:
+        outpath = sys.argv[2]
     secrets_path = "spp_apw.py"
     if len(sys.argv) > 3:
         secrets = sys.argv[3]
