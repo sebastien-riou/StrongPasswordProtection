@@ -24,16 +24,17 @@ typedef uint8_t spp_rx_t;
 #endif
 
 typedef struct spp_meta_struct_t {
-    const void*const src;
+    const void*const start;
+    const void*const stop;
     void*const dst;
-    size_t size;
     uint8_t digest[SPP_HASH_BLOCK_SIZE];
 } spp_meta_t;
 
 #ifndef SPP_TYPE_ONLY
 static int spp_open(const spp_meta_t*const meta, uint8_t*const red_buf){
-    const uint8_t*src=meta->src;
+	const uint8_t*src=meta->start;
     uint8_t*dst=meta->dst;
+    size_t size = meta->stop-meta->start;
     //printf("src = %lx\n",(uint64_t)src);
     //printf("dst = %lx\n",(uint64_t)dst);
     //printf("meta->size = %lu\n",meta->size);
@@ -56,7 +57,7 @@ static int spp_open(const spp_meta_t*const meta, uint8_t*const red_buf){
     sha256_sum(dstbuf,SPP_HASH_BLOCK_SIZE+1,digest);
     //print_bytes("digest  ",digest,32,"\n");
     if(memcmp(digest,meta->digest,sizeof(meta->digest))){return 1;}//password check happens here
-    size_t remaining=meta->size;
+    size_t remaining=size;
     while(remaining){
         unsigned int size = remaining > SPP_HASH_BLOCK_SIZE ? SPP_HASH_BLOCK_SIZE : remaining;
         for(unsigned int i=0;i<size;i++){
