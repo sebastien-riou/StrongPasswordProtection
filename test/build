@@ -1,3 +1,0 @@
-#!/bin/sh
-
-gcc --std=c99 -I ../inc test.c protected.c 

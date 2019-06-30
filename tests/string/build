@@ -1,0 +1,3 @@
+#!/bin/sh
+
+gcc --std=c99 -I ../ -I ../../inc main.c protected.c 

@@ -43,6 +43,7 @@ def get_section_headers_from_elf(elf):
     return sections
 
 if __name__ == "__main__":
+    debug=0
     if len(sys.argv)<2:
         print("ERROR: need at least 1 argument")
         print("usage:")
@@ -69,6 +70,8 @@ if __name__ == "__main__":
     with open(secrets_path, 'w') as secrets:
         secrets.write('secrets=[]\n')
         for name,section in protected_sections.items():
+            if debug:
+                print(name)
             meta_name = name.replace('.spp_protected','.spp_meta')
             meta = protected_meta[meta_name]
             with open(outpath, 'r+b') as f:
@@ -101,21 +104,24 @@ if __name__ == "__main__":
                 for i in range(0,spp_seed_iterations):
                     spp_otp()
                 SPP_APW_odd = spp_otp()
-                #print("SPP_APW_odd")
-                #print("%064x"%int.from_bytes(SPP_APW_odd, byteorder='big'))
+                if debug:
+                    print("\tSPP_APW_odd")
+                    print("\t%064x"%int.from_bytes(SPP_APW_odd, byteorder='big'))
                 SPP_APW=bytearray()
                 for b in SPP_APW_odd:
                     SPP_APW.append(0xF8)
                     SPP_APW.append(b)
                 spp_otp_state = SHA256.new(SPP_APW).digest()
-                #print("spp_otp_state")
-                #print("%064x"%int.from_bytes(spp_otp_state, byteorder='big'))
+                if debug:
+                    print("\tspp_otp_state")
+                    print("\t%064x"%int.from_bytes(spp_otp_state, byteorder='big'))
                 buf=spp_otp_state
                 b=(1).to_bytes(1,byteorder='little')
                 buf+=b
                 SPP_DIGEST = SHA256.new(buf).digest()
-                #print("SPP_DIGEST")
-                #print("%064x"%int.from_bytes(SPP_DIGEST, byteorder='big'))
+                if debug:
+                    print("\tSPP_DIGEST")
+                    print("\t%064x"%int.from_bytes(SPP_DIGEST, byteorder='big'))
                 f.write(SPP_DIGEST)
 
                 f.seek(section['file_offset'])
@@ -126,7 +132,7 @@ if __name__ == "__main__":
                 SPP_OTP = bytearray()
                 SPP_OTP+=spp_otp_state
                 for i in range(1,SPP_BLOCKS):
-                    SPP_OTP+=brp_otp()
+                    SPP_OTP+=spp_otp()
 
                 protected_dat = bytearray()
 

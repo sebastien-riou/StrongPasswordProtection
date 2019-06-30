@@ -35,36 +35,64 @@ Possible evolutions:
 ## Demo
 
 ### The test program
-It is a Linux program which display 'protected greetings' when the correct password is entered.
-It expects a 32 bytes hexadecimal number as password.
+It is a Linux program which does the following:
+- Ask for a password (It expects a 32 bytes hexadecimal number)
+- If the password does not match, exit
+- Execute the *greetings* function: it prints 'protected greetings'
+- Execute the *goodbye* function: it prints 'protected goodbye'
+
+The code:
+
+    #include "test_helpers.h"
+
+    __attribute__((__section__(".spp_meta"))) const spp_meta_t meta = {0};//members will be filled out at elf file post processing step
+    #define PROTECTED __attribute__((__section__(".spp_protected")))
+
+    PROTECTED void greetings(void){
+        printf("protected greetings\n");
+    }
+
+    PROTECTED void goodbye(void){
+        printf("protected goodbye\n");
+    }
+
+    int main(int argc, char **argv){
+        int force = argc!=1;//add a dummy argument to force execution after a wrong password has been detected
+        ask_for_password("protected code",&meta,force);
+        greetings();
+        goodbye();
+        return 0;
+    }
+
 
 ### Build it
+This step produces a.out which is not usable as is.
 
-    cd test
-    ~/dev/StrongPasswordProtection$ cd test
-    ~/dev/StrongPasswordProtection/test$ ./build
+    user@lafite:~/Downloads/StrongPasswordProtection$ cd tests/code
+    user@lafite:~/Downloads/StrongPasswordProtection/tests/code$ ./build
 
 ### Password-protect it
+This step produces:
+- spp_pwd.py: a file containing the generated password
+- a.out.protected: the final binary, usable only with the knowledge of the password
 
-    ~/dev/StrongPasswordProtection/test$ ../spp.py a.out
+    user@lafite:~/Downloads/StrongPasswordProtection/tests/code$ ../../spp.py a.out
 
 ### Try it with a wrong password
 
-    ~/dev/StrongPasswordProtection/test$ ./a.out.protected
-    enter the password
-    0000000000000000000000000000000000000000000000000000000000000000
+    user@lafite:~/Downloads/StrongPasswordProtection/tests/code$ ./a.out.protected
+    enter the password for accessing 'protected code'   --> type 0000000000000000000000000000000000000000000000000000000000000000
     spp_open failed with error code 1
 
 ### Get the expected password
 By default, ssp.py writes the password in the file spp_apw.py
 
-    ~/dev/StrongPasswordProtection/test$ head -2 spp_apw.py
-    secrets=[]
-    #.greetings.spp_protected fcd52e456880ecbe6cc525a5f7f3df6b2088a688f0a66ce856693bd668f1427d
+    user@lafite:~/Downloads/StrongPasswordProtection/tests/code$ cat spp_apw.py | grep ^#
+    #.spp_protected b679d54220a7f77674a41025ab5b82652c5001ffbe9f31d727e81b954f67d43e
 
 ### Try it with the right password
 
-    ~/dev/StrongPasswordProtection/test$ ./a.out.protected
-    enter the password
-    fcd52e456880ecbe6cc525a5f7f3df6b2088a688f0a66ce856693bd668f1427d
+    user@lafite:~/Downloads/StrongPasswordProtection/tests/code$ ./a.out.protected
+    enter the password for accessing 'protected code'   --> type b679d54220a7f77674a41025ab5b82652c5001ffbe9f31d727e81b954f67d43e
     protected greetings
+    protected goodbye
