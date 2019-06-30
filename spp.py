@@ -43,14 +43,22 @@ def get_section_headers_from_elf(elf):
     return sections
 
 if __name__ == "__main__":
+    if len(sys.argv)<3:
+        print("ERROR: need at least 2 arguments")
+        print("usage:")
+        print("\t%s <src elf path> <dst elf path> [secrets path] [SPP_APW_EVEN]"%os.path.basename(__file__))
+        print("\t",sys.argv)
+        exit(-1)
     elfpath = sys.argv[1]
+    outpath = sys.argv[2]
     secrets_path = "spp_apw.py"
-    if len(sys.argv) > 2:
-        secrets = sys.argv[2]
-    SPP_APW_EVEN=0xF8
     if len(sys.argv) > 3:
-        SPP_APW_EVEN = int(sys.argv[3],0)
-    sections = get_section_headers_from_elf(elfpath)
+        secrets = sys.argv[3]
+    SPP_APW_EVEN=0xF8
+    if len(sys.argv) > 4:
+        SPP_APW_EVEN = int(sys.argv[4],0)
+    shutil.copy(elfpath,outpath)
+    sections = get_section_headers_from_elf(outpath)
     protected_sections = {k: v for k, v in sections.items() if k.endswith('.spp_protected')}
     protected_meta = {k: v for k, v in sections.items() if k.endswith('.spp_meta')}
     #print(protected_sections)
@@ -61,13 +69,15 @@ if __name__ == "__main__":
         for name,section in protected_sections.items():
             meta_name = name.replace('.spp_protected','.spp_meta')
             meta = protected_meta[meta_name]
-            with open(elfpath, 'r+b') as f:
+            with open(outpath, 'r+b') as f:
                 f.seek(meta['file_offset'])
                 state = f.read(meta['size'])
                 try:
                     assert(0 == sum(state))
                 except:
-                    print("ERROR: This elf file has been already modified, we need the original one")
+                    os.remove(outpath)
+                    os.remove(secrets_path)
+                    print("ERROR: %s has been already modified, we need the original one"%elfpath)
                     exit(-1)
                 ptrsize = (meta['size']-32) // 3
                 assert(meta['size'] == ptrsize*3+32)

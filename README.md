@@ -46,11 +46,11 @@ It expects a 32 bytes hexadecimal number as password.
 
 ### Password-protect it
 
-    ~/dev/StrongPasswordProtection/test$ ../spp.py a.out
+    ~/dev/StrongPasswordProtection/test$ ../spp.py a.out b
 
 ### Try it with a wrong password
 
-    ~/dev/StrongPasswordProtection/test$ ./a.out
+    ~/dev/StrongPasswordProtection/test$ ./b
     enter the password
     0000000000000000000000000000000000000000000000000000000000000000
     spp_open failed with error code 1
@@ -64,7 +64,7 @@ By default, ssp.py writes the password in the file spp_apw.py
 
 ### Try it with the right password
 
-    ~/dev/StrongPasswordProtection/test$ ./a.out
+    ~/dev/StrongPasswordProtection/test$ ./b
     enter the password
     fcd52e456880ecbe6cc525a5f7f3df6b2088a688f0a66ce856693bd668f1427d
     protected greetings
