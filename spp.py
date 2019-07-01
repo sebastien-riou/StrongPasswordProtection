@@ -173,9 +173,11 @@ if __name__ == "__main__":
                         SPP_APW.append(0xF8)
                         SPP_APW.append(b)
                     spp_otp_state = SHA256.new(SPP_APW).digest()
+                    bypass_pw=spp_otp_state
                     if debug:
-                        print("\tspp_otp_state")
-                        print("\t%064x"%int.from_bytes(spp_otp_state, byteorder='big'))
+                        print("\tSPP_SEC_BYPASS_PW")
+                        print("\t%064x"%int.from_bytes(bypass_pw, byteorder='big'))
+                    spp_otp_state = SHA256.new(bypass_pw).digest()
                     buf=spp_otp_state
                     b=(1).to_bytes(1,byteorder='little')
                     buf+=b
@@ -205,13 +207,18 @@ if __name__ == "__main__":
 
                     spp_seed_hex = "0x%032x"%int.from_bytes(spp_seed, byteorder='big')
                     spp_apw_hex = "0x%032x"%int.from_bytes(SPP_APW_odd, byteorder='big')
+                    spp_bpw_hex = "0x%032x"%int.from_bytes(bypass_pw, byteorder='big')
                     secrets.write('#%s %s\n'%(name,spp_apw_hex[2:]))
                     secrets.write('secrets.append({')
                     secrets.write('"name":"%s",'%name)
+                    secrets.write('"SPP_APW_EVEN":0x%02X,'%(SPP_APW_EVEN))
                     secrets.write('"seed_iterations":%d,'%(spp_seed_iterations))
                     secrets.write('"seed":%s.to_bytes(32,byteorder="big"),'%(spp_seed_hex))
-                    secrets.write('"password":%s.to_bytes(32,byteorder="big")})\n\n'%(spp_apw_hex))
+                    secrets.write('"SPP_APW_odd":%s.to_bytes(32,byteorder="big"),'%(spp_apw_hex))
+                    secrets.write('"SPP_SEC_BYPASS_PW":%s.to_bytes(32,byteorder="big")})\n\n'%(spp_bpw_hex))
             except:
+                if debug:
+                    raise
                 os.remove(outpath)
                 #os.remove(secrets_path)
                 print("ERROR: %s has been already modified, we need the original one"%elfpath)

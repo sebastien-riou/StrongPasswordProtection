@@ -31,31 +31,53 @@ typedef struct spp_meta_struct_t {
 } spp_meta_t;
 
 #ifndef SPP_TYPE_ONLY
-static int spp_open(const spp_meta_t*const meta, uint8_t*const red_buf){
+static int spp_open(const spp_meta_t*const meta,uint8_t*const red_buf
+#ifdef SPP_PWTWEAK
+		,const uint8_t*const pwtweak
+#endif
+#ifdef SPP_SEC_BYPASS
+		,const uint8_t*const bypass_pw
+#endif
+	){
 	const uint8_t*src=meta->start;
     uint8_t*dst=meta->dst;
     size_t size = meta->stop-meta->start;
     //printf("src = %lx\n",(uint64_t)src);
     //printf("dst = %lx\n",(uint64_t)dst);
     //printf("meta->size = %lu\n",meta->size);
-    uint8_t *spp_apw=red_buf;
-    for(unsigned int i=0;i<SPP_HASH_BLOCK_SIZE;i+=sizeof(spp_rx_t)){
-        spp_rx_t rxdat=spp_rx();
-        const uint8_t *const rxdat8=(const uint8_t *const)&rxdat;
-        unsigned int offset=2*i;
-        for(unsigned int j=0;j<sizeof(spp_rx_t);j++){
-            spp_apw[offset+2*j]=SPP_APW_EVEN;
-            spp_apw[offset+2*j+1]=rxdat8[j];
-        }
+    uint8_t dstbuf[SPP_HASH_BLOCK_SIZE*2]={0};
+    if(0!=red_buf){
+    	uint8_t *spp_apw=red_buf;
+		for(unsigned int i=0;i<SPP_HASH_BLOCK_SIZE;i+=sizeof(spp_rx_t)){
+			spp_rx_t rxdat=spp_rx();
+			const uint8_t *const rxdat8=(const uint8_t *const)&rxdat;
+			unsigned int offset=2*i;
+			for(unsigned int j=0;j<sizeof(spp_rx_t);j++){
+				spp_apw[offset+2*j]=SPP_APW_EVEN;
+				spp_apw[offset+2*j+1]=rxdat8[j];
+			}
+		}
+		//print_bytes("spp_apw ",spp_apw,64,"\n");
+		sha256_sum(spp_apw,SPP_HASH_BLOCK_SIZE*2,dstbuf);
+#ifdef SPP_SEC_BYPASS
+    }else{
+		memcpy(dstbuf,bypass_pw,SPP_HASH_BLOCK_SIZE);
+#endif
     }
-    uint8_t dstbuf[SPP_HASH_BLOCK_SIZE+1];
-    //print_bytes("spp_apw ",spp_apw,64,"\n");
-    sha256_sum(spp_apw,SPP_HASH_BLOCK_SIZE*2,dstbuf);
+    sha256_sum(dstbuf,SPP_HASH_BLOCK_SIZE,dstbuf);
     //print_bytes("dstbuf  ",dstbuf,32,"\n");
-    uint8_t *digest=red_buf;
+    uint8_t *digest=dstbuf+SPP_HASH_BLOCK_SIZE;
     dstbuf[SPP_HASH_BLOCK_SIZE]=1;
     sha256_sum(dstbuf,SPP_HASH_BLOCK_SIZE+1,digest);
     //print_bytes("digest  ",digest,32,"\n");
+#ifdef SPP_PWTWEAK
+    if(pwtweak){
+    	//allows arbitrary passwords, full flexibility but less secure
+    	for(unsigned int i=0;i<SPP_HASH_BLOCK_SIZE;i++){
+    		digest[i]^=pwtweak[i];
+    	}
+    }
+#endif
     if(memcmp(digest,meta->digest,sizeof(meta->digest))){return 1;}//password check happens here
     size_t remaining=size;
     while(remaining){
